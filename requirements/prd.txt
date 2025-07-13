@@ -1,0 +1,54 @@
+Product Requirements Document
+Product name: Echo
+Version: 1.0 (Final)
+Date: 13 Jul 2025
+Author: Jeffrey, Product Director
+
+1. Vision
+Make high-quality, anonymous peer feedback as easy as a 15-minute audio chat, and turn it into an actionable growth plan for every knowledge worker.
+
+2. Key Business Outcomes
+Metric	Target at 6 months	Reason
+Sessions created / month	1 000	Core engagement driver
+Invitee completion rate	≥ 70 %	Ensures data validity
+Active requesters retention	≥ 50 % create a second session within 35 days	Habit formation
+Net Promoter Score (requester)	≥ 45	Product-market fit indicator
+
+3. Personas
+Role	Needs	Current pains
+Main user – individual contributor or first-line manager	Honest, specific feedback; quick turnaround; anonymous responses	Manual forms, chasing colleagues, vague comments
+Sub user – peer, report, or manager	Effortless sharing; trust that remarks stay private	Survey fatigue; fear of retaliation
+
+4. End-to-End Experience
+Create session
+
+Wizard captures: focus topic(s), optional 0-3 custom questions, invitees (3-10) with role, relationship length, sentiment, and deadline (7–30 days, default 14).
+
+Agent 1 “ScopeScout”
+
+Adds AI-generated questions until total list = 5, confirms with requester, then triggers invitations.
+
+Invitation
+
+Email explains the audio interview window (07:00–22:00 local time) and includes a unique start link. Reminder messages at T-3 days and T-1 day.
+
+Agent 2 “DeepDive”
+
+Audio-only interview (≤ 15 min) with waveform visual cue. If no-show after 5 minutes, agent offers reschedule. Real-time transcription feeds the backend.
+
+Privacy layer
+
+Differential-privacy paraphraser removes identifiers and writing quirks before storage.
+
+Agent 3 “ClarityCore”
+
+When all interviews finish or deadline passes, aggregates transcripts and produces an anonymous report with strengths, blind spots, and top 3 SMART actions.
+
+Delivery and follow-up
+
+Email notifies requester that report is ready and launches dashboard. System automatically schedules a repeat session exactly 30 days later unless requester opts out.
+
+NPS pulse
+
+Seven days after the requester first views the report, an email asks one NPS question with a reminder at day 10 if unanswered.
+
