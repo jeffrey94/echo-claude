@@ -99,3 +99,74 @@ livekit.yaml
 # Test artifacts
 playwright-report/
 test-results/
+
+# Claude Code settings (keep local settings private)
+.claude/settings.local.json
+
+# AI interviewer temp files
+test-audio.*
+debug-session.js
+*.backup
+
+# Package manager lock files (keep package-lock.json but exclude others)
+yarn.lock
+pnpm-lock.yaml
+
+# Build maps and artifacts
+*.map
+*.tsbuildinfo
+
+# Sentry config
+.sentryclirc
+
+# Turborepo
+.turbo/
+
+# ESLint cache
+.eslintcache
+
+# Parcel cache
+.parcel-cache/
+
+# Coverage reports
+*.lcov
+.nyc_output/
+
+# Runtime cache
+.cache/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Microbundle cache
+.rts2_cache_*
+
+# dotenv environment variable files
+.env.test
+
+# Storybook build outputs
+.out/
+.storybook-out/
+
+# Rush dependency management
+common/deploy/
+common/temp/
+common/autoinstallers/*/.npmrc
+**/.rush/temp/
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
