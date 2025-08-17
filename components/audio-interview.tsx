@@ -18,8 +18,9 @@ import {
   CheckCircle,
   Loader2
 } from 'lucide-react'
-import { BrowserAIAgent } from '@/lib/ai-agents/browser-ai-agent'
+import { ProductionAIAgent, AIAgentState } from '@/lib/ai-agents/production-ai-agent'
 import { InterviewContext } from '@/lib/ai-agents/deepdive-prompts'
+import { ChatGPTVoiceVisual } from '@/components/ui/chatgpt-voice-visual'
 
 interface AudioInterviewProps {
   token: string
@@ -52,10 +53,11 @@ export function AudioInterview({
   const [duration, setDuration] = useState(0)
   const [aiStatus, setAiStatus] = useState<'connecting' | 'connected' | 'speaking' | 'listening'>('connecting')
   const [error, setError] = useState<string>('')
-  const [realAIAgent, setRealAIAgent] = useState<BrowserAIAgent | null>(null)
+  const [productionAIAgent, setProductionAIAgent] = useState<ProductionAIAgent | null>(null)
   const [aiMessages, setAiMessages] = useState<string[]>([])
   const [showRealAI, setShowRealAI] = useState<boolean>(false)
   const [isStartingAI, setIsStartingAI] = useState<boolean>(false)
+  const [aiAgentState, setAiAgentState] = useState<AIAgentState>('idle')
 
   const startTimeRef = useRef<Date>()
   const intervalRef = useRef<NodeJS.Timeout>()
@@ -186,8 +188,8 @@ export function AudioInterview({
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
-      if (realAIAgent) {
-        realAIAgent.stop()
+      if (productionAIAgent) {
+        productionAIAgent.stop()
       }
       room.disconnect()
     }
@@ -285,34 +287,26 @@ export function AudioInterview({
     }
   }
 
-  const startRealAIAgent = async () => {
-    // Prevent double-clicks and multiple instances
-    if (isStartingAI) {
-      console.log('⚠️ AI Agent is already starting, ignoring duplicate request...')
-      return
-    }
-    
+
+  // PRODUCTION AI Agent - LiveKit-Optimized with Ultra-Fast VAD
+  const startProductionAIAgent = async () => {
     try {
       setIsStartingAI(true)
+      setError('')
       
-      // Stop any existing AI agent
-      if (realAIAgent) {
-        console.log('⚠️ AI Agent already running, stopping previous instance...')
-        realAIAgent.stop()
-        setRealAIAgent(null)
+      // Stop any existing agents
+      if (productionAIAgent) {
+        productionAIAgent.stop()
+        setProductionAIAgent(null)
       }
       
-      console.log('🤖 Starting REAL AI interviewer...')
-      console.log('🔧 Environment check:', {
-        hasOpenAI: !!process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-        openAIKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY?.substring(0, 10) + '...'
-      })
+      console.log('🚀 Starting PRODUCTION AI with LiveKit-optimized VAD...')
       setShowRealAI(true)
       
-      // Create interview context from session data
+      // Create interview context
       const interviewContext: InterviewContext = {
         sessionTitle: sessionTitle,
-        focusTopics: ['communication', 'leadership', 'teamwork'], // These would come from session data
+        focusTopics: ['communication', 'leadership', 'teamwork'],
         customQuestions: [
           'How would you describe their communication style in team meetings?',
           'What areas would you suggest they focus on for professional growth?',
@@ -326,40 +320,43 @@ export function AudioInterview({
         timeRemaining: 20
       }
 
-      // Initialize real AI agent
-      const aiAgent = new BrowserAIAgent({
+      // Initialize production AI agent
+      const aiAgent = new ProductionAIAgent({
         interviewContext,
         onStateChange: (state) => {
-          console.log('🤖 AI State:', state)
-          if (state === 'active') {
+          console.log('🚀 Production AI State:', state)
+          setAiAgentState(state)
+          if (state === 'listening' && aiAgentState === 'connecting') {
             setAiStatus('connected')
             setInterviewState('in_progress')
           }
         },
         onAIMessage: (message) => {
-          console.log('🤖 AI Message:', message)
+          console.log('🚀 Production AI Message:', message)
           setAiMessages(prev => [...prev, message])
         },
         onInterviewComplete: (summary) => {
-          console.log('📊 Interview completed:', summary)
+          console.log('📊 Production Interview completed:', summary)
           setInterviewState('completed')
           onInterviewComplete?.(summary.duration)
         },
         onError: (error) => {
-          console.error('❌ AI Agent Error:', error)
+          console.error('❌ Production AI Error:', error)
           setError(error)
           setInterviewState('error')
         }
       })
 
-      setRealAIAgent(aiAgent)
+      setProductionAIAgent(aiAgent)
       
-      // Start the interview
+      // Start the production interview
       await aiAgent.startInterview()
       
+      console.log('✅ Production AI interviewer started successfully')
+      
     } catch (error: any) {
-      console.error('❌ Error starting real AI agent:', error)
-      setError(error.message || 'Failed to start AI interviewer')
+      console.error('❌ Error starting Production AI agent:', error)
+      setError(error.message || 'Failed to start Production AI interviewer')
       setInterviewState('error')
     } finally {
       setIsStartingAI(false)
@@ -440,6 +437,13 @@ export function AudioInterview({
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* ChatGPT-style Voice Visualization - Always visible, reacts to actual audio */}
+            <div className="flex justify-center py-8">
+              <ChatGPTVoiceVisual 
+                className="mx-auto" 
+                forceActive={aiAgentState === 'speaking'}
+              />
+            </div>
             {/* Error Display */}
             {interviewState === 'error' && (
               <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -464,52 +468,20 @@ export function AudioInterview({
               </div>
             )}
 
-            {/* AI Status */}
-            {interviewState === 'in_progress' && (
-              <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className={`w-3 h-3 rounded-full ${aiStatus === 'connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`} />
-                  <span className="font-medium text-blue-900">
-                    AI Interviewer {aiStatus === 'connected' ? 'Ready' : 'Connecting...'}
-                  </span>
-                </div>
-                <p className="text-sm text-blue-700">
-                  Speak naturally and clearly. The AI will guide you through the feedback questions.
-                </p>
-                
-                {/* Development AI Options - Show if AI is still connecting */}
-                {aiStatus === 'connecting' && (
-                  <div className="mt-4 pt-4 border-t border-blue-200 space-y-3">
-                    <p className="text-xs text-blue-600 mb-2">Phase 6 AI Options:</p>
-                    
-                    {/* Real AI Button */}
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        startRealAIAgent()
-                      }}
-                      disabled={isStartingAI}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                      size="sm"
-                    >
-                      {isStartingAI ? '🔄 Starting AI...' : '🎤 Start REAL AI Interviewer'}
-                    </Button>
-                    
-                    {/* Test Mode Button */}
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        console.log('🔧 Test mode button clicked from AI status section!')
-                        simulateAIAgent()
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
-                    >
-                      🧪 Simulate AI Agent (Test Mode)
-                    </Button>
-                  </div>
-                )}
+            {/* AI Start Button - Only show when waiting for AI and not started yet */}
+            {interviewState === 'waiting_for_ai' && aiStatus === 'connecting' && !showRealAI && (
+              <div className="text-center">
+                <Button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    startProductionAIAgent()
+                  }}
+                  disabled={isStartingAI}
+                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 font-medium px-8 py-3 text-lg"
+                  size="lg"
+                >
+                  {isStartingAI ? '🔄 Starting AI Interviewer...' : '🎤 Start AI Interview'}
+                </Button>
               </div>
             )}
 
@@ -545,48 +517,6 @@ export function AudioInterview({
               </div>
             )}
 
-            {/* Instructions */}
-            {interviewState === 'waiting_for_ai' && (
-              <div className="text-center space-y-4">
-                <div className="text-sm text-gray-600 space-y-2">
-                  <p>🎤 Your microphone is ready</p>
-                  <p>🤖 Waiting for the AI interviewer to join...</p>
-                  <p>📝 The interview will begin automatically once connected</p>
-                </div>
-                
-                {/* Test Mode & Real AI Buttons */}
-                <div className="pt-4 border-t border-gray-200 space-y-3">
-                  <p className="text-xs text-gray-500 mb-2">Phase 6 AI Options:</p>
-                  
-                  {/* Real AI Button */}
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      startRealAIAgent()
-                    }}
-                    disabled={isStartingAI}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                    size="sm"
-                  >
-                    {isStartingAI ? '🔄 Starting AI...' : '🎤 Start REAL AI Interviewer'}
-                  </Button>
-                  
-                  {/* Test Mode Button */}
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      console.log('🔧 Test mode button clicked!')
-                      simulateAIAgent()
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
-                  >
-                    🧪 Simulate AI Agent (Test Mode)
-                  </Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 

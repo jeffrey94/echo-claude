@@ -152,7 +152,7 @@ Start with the interview opening and then begin with the first question.`
         ],
         max_tokens: 150, // Concise responses for speed
         temperature: 0.7,
-        stream: false // We'll add streaming later
+        stream: false // Keep simple for reliability
       })
 
       const aiResponse = completion.choices[0]?.message?.content || this.getDefaultResponse()
